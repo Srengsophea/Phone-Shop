@@ -28,6 +28,15 @@ import { useAuthStore } from '../stores/authStore';
 import { useCompareStore } from '../stores/compareStore';
 import { BrandLogo } from '../components/BrandLogo';
 
+const TRADE_IN_DEVICES = [
+  { id: 'none', name: 'No Trade-In', credit: 0, sub: 'Keep current device' },
+  { id: 'ip15pm', name: 'Apple iPhone 15 Pro Max', credit: 600, sub: 'Save $600' },
+  { id: 'ip14pm', name: 'Apple iPhone 14 Pro Max', credit: 450, sub: 'Save $450' },
+  { id: 's24u', name: 'Samsung Galaxy S24 Ultra', credit: 550, sub: 'Save $550' },
+  { id: 's23u', name: 'Samsung Galaxy S23 Ultra', credit: 400, sub: 'Save $400' },
+  { id: 'p8p', name: 'Google Pixel 8 Pro', credit: 320, sub: 'Save $320' },
+];
+
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -35,6 +44,7 @@ export const ProductDetailPage: React.FC = () => {
   const { addItem, isLoading: isCartLoading } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const { isAuthenticated, openAuthModal } = useAuthStore();
+  const { addToCompare, removeFromCompare, isInCompare } = useCompareStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -101,18 +111,8 @@ export const ProductDetailPage: React.FC = () => {
     );
   }
 
-  const TRADE_IN_DEVICES = [
-    { id: 'none', name: 'No Trade-In', credit: 0, sub: 'Keep current device' },
-    { id: 'ip15pm', name: 'Apple iPhone 15 Pro Max', credit: 600, sub: 'Save $600' },
-    { id: 'ip14pm', name: 'Apple iPhone 14 Pro Max', credit: 450, sub: 'Save $450' },
-    { id: 's24u', name: 'Samsung Galaxy S24 Ultra', credit: 550, sub: 'Save $550' },
-    { id: 's23u', name: 'Samsung Galaxy S23 Ultra', credit: 400, sub: 'Save $400' },
-    { id: 'p8p', name: 'Google Pixel 8 Pro', credit: 320, sub: 'Save $320' },
-  ];
-
-  const compareStore = useCompareStore();
   const isFavorite = isInWishlist(product.id);
-  const isCompareActive = compareStore.isInCompare(product.id);
+  const isCompareActive = isInCompare(product.id);
   const activeVariant = selectedVariant || product.variants?.[0];
   const price = activeVariant?.sale_price ?? activeVariant?.price ?? product.sale_price ?? product.base_price;
   const originalPrice = (activeVariant?.sale_price ? activeVariant.price : null) || product.base_price;
@@ -128,9 +128,9 @@ export const ProductDetailPage: React.FC = () => {
 
   const handleToggleCompare = () => {
     if (isCompareActive) {
-      compareStore.removeFromCompare(product.id);
+      removeFromCompare(product.id);
     } else {
-      compareStore.addToCompare(product);
+      addToCompare(product);
     }
   };
 
