@@ -101,6 +101,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/stats', [AdminDashboardController::class, 'stats']);
 
         // Product Management
+        Route::post('/products/upload-image', [AdminProductController::class, 'uploadImage']);
         Route::apiResource('products', AdminProductController::class);
 
         // Inventory Management

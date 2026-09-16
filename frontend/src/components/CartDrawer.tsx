@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight, Tag, CheckCircle2 } from 'lucide-react';
 import { useCartStore } from '../stores/cartStore';
+import { useAuthStore } from '../stores/authStore';
 import { formatPrice, getImageUrl } from '../utils/formatters';
 
 export const CartDrawer: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, openAuthModal } = useAuthStore();
   const {
     cart,
     isCartOpen,
@@ -38,6 +40,10 @@ export const CartDrawer: React.FC = () => {
 
   const handleCheckoutClick = () => {
     toggleCart(false);
+    if (!isAuthenticated) {
+      openAuthModal('Please sign in to proceed with checkout.');
+      return;
+    }
     navigate('/checkout');
   };
 

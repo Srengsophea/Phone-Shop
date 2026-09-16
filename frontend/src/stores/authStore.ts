@@ -8,6 +8,10 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  isAuthModalOpen: boolean;
+  authModalMessage: string | null;
+  openAuthModal: (message?: string) => void;
+  closeAuthModal: () => void;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, email: string, password: string, password_confirmation: string, phone?: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
@@ -22,7 +26,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: !!localStorage.getItem('phonehub_token'),
   isLoading: false,
   error: null,
+  isAuthModalOpen: false,
+  authModalMessage: null,
 
+  openAuthModal: (message) => set({ isAuthModalOpen: true, authModalMessage: message || null, error: null }),
+  closeAuthModal: () => set({ isAuthModalOpen: false, authModalMessage: null, error: null }),
   clearError: () => set({ error: null }),
 
   login: async (email, password) => {
@@ -37,7 +45,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const { user, token } = response.data.data;
       localStorage.setItem('phonehub_token', token);
-      set({ user, token, isAuthenticated: true, isLoading: false });
+      set({ user, token, isAuthenticated: true, isLoading: false, isAuthModalOpen: false, authModalMessage: null });
       return { success: true };
     } catch (err: any) {
       const message = err.response?.data?.message || 'Login failed. Please verify credentials.';
@@ -61,7 +69,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const { user, token } = response.data.data;
       localStorage.setItem('phonehub_token', token);
-      set({ user, token, isAuthenticated: true, isLoading: false });
+      set({ user, token, isAuthenticated: true, isLoading: false, isAuthModalOpen: false, authModalMessage: null });
       return { success: true };
     } catch (err: any) {
       const message = err.response?.data?.message || 'Registration failed. Please check inputs.';

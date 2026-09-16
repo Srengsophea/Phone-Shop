@@ -28,7 +28,7 @@ export const ProductDetailPage: React.FC = () => {
 
   const { addItem, isLoading: isCartLoading } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, openAuthModal } = useAuthStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -100,12 +100,28 @@ export const ProductDetailPage: React.FC = () => {
   const stockAvailable = activeVariant?.stock ?? 10;
 
   const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      openAuthModal('Please sign in to add phones to your cart.');
+      return;
+    }
     await addItem(product.id, activeVariant?.id || null, quantity);
   };
 
   const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      openAuthModal('Please sign in to buy this phone with 1-Click Checkout.');
+      return;
+    }
     await addItem(product.id, activeVariant?.id || null, quantity);
     navigate('/checkout');
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!isAuthenticated) {
+      openAuthModal('Please sign in to save phones to your wishlist.');
+      return;
+    }
+    await toggleWishlist(product.id);
   };
 
   const handleShare = () => {
@@ -342,7 +358,7 @@ export const ProductDetailPage: React.FC = () => {
               </button>
 
               <button
-                onClick={() => toggleWishlist(product.id)}
+                onClick={handleToggleWishlist}
                 className={`p-4 rounded-2xl border transition-all ${
                   isFavorite
                     ? 'bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/25'

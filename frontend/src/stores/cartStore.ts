@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import api from '../api/axios';
 import { Cart } from '../types';
+import { useAuthStore } from './authStore';
 
 interface CartState {
   cart: Cart;
@@ -50,6 +51,12 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   addItem: async (productId, variantId = null, quantity = 1) => {
+    const { isAuthenticated, openAuthModal } = useAuthStore.getState();
+    if (!isAuthenticated) {
+      openAuthModal('Please sign in to add phones to your cart.');
+      return { success: false, message: 'Authentication required' };
+    }
+
     set({ isLoading: true });
     try {
       const response = await api.post('/cart/items', {

@@ -4,6 +4,7 @@ import { Product, ProductVariant } from '../types';
 import { formatPrice, getImageUrl } from '../utils/formatters';
 import { useCartStore } from '../stores/cartStore';
 import { useWishlistStore } from '../stores/wishlistStore';
+import { useAuthStore } from '../stores/authStore';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -13,6 +14,7 @@ interface QuickViewModalProps {
 export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose }) => {
   const { addItem, isLoading } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { isAuthenticated, openAuthModal } = useAuthStore();
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product?.variants?.[0] || null
@@ -29,8 +31,22 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose
   const primaryImage = product.images?.[0]?.image_path;
 
   const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      onClose();
+      openAuthModal('Please sign in to add phones to your cart.');
+      return;
+    }
     await addItem(product.id, activeVariant?.id || null, quantity);
     onClose();
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!isAuthenticated) {
+      onClose();
+      openAuthModal('Please sign in to save phones to your wishlist.');
+      return;
+    }
+    await toggleWishlist(product.id);
   };
 
   return (
@@ -148,7 +164,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose
               </button>
 
               <button
-                onClick={() => toggleWishlist(product.id)}
+                onClick={handleToggleWishlist}
                 className={`p-3 rounded-xl border transition-all ${
                   isFavorite
                     ? 'bg-rose-500 text-white border-rose-500'

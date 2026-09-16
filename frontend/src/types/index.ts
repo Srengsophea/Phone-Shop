@@ -82,6 +82,7 @@ export interface Product {
   is_featured: boolean;
   is_bestseller: boolean;
   is_active: boolean;
+  warranty_info?: string;
   stock?: number;
   rating_cache?: number;
   reviews_count?: number;

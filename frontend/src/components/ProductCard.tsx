@@ -5,6 +5,7 @@ import { Product } from '../types';
 import { formatPrice, getImageUrl } from '../utils/formatters';
 import { useCartStore } from '../stores/cartStore';
 import { useWishlistStore } from '../stores/wishlistStore';
+import { useAuthStore } from '../stores/authStore';
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +15,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
   const { addItem, isLoading: isCartLoading } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { isAuthenticated, openAuthModal } = useAuthStore();
 
   const isFavorite = isInWishlist(product.id);
   const primaryImage = product.images?.find((img) => img.is_primary)?.image_path || product.images?.[0]?.image_path;
@@ -28,12 +30,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isAuthenticated) {
+      openAuthModal('Please sign in to add phones to your cart.');
+      return;
+    }
     await addItem(product.id, defaultVariant?.id || null, 1);
   };
 
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isAuthenticated) {
+      openAuthModal('Please sign in to save phones to your wishlist.');
+      return;
+    }
     await toggleWishlist(product.id);
   };
 

@@ -9,10 +9,9 @@ import { useCartStore } from '../stores/cartStore';
 import { useWishlistStore } from '../stores/wishlistStore';
 
 export const CustomerLayout: React.FC = () => {
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const location = useLocation();
 
-  const { fetchUser, isAuthenticated } = useAuthStore();
+  const { fetchUser, isAuthenticated, isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthStore();
   const { fetchCart } = useCartStore();
   const { fetchWishlist } = useWishlistStore();
 
@@ -32,7 +31,7 @@ export const CustomerLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-blue-600 selection:text-white">
       {/* Header / Navbar */}
-      <Navbar onOpenAuth={() => setIsAuthOpen(true)} />
+      <Navbar onOpenAuth={() => openAuthModal()} />
 
       {/* Main Content Area */}
       <main className="flex-1">
@@ -43,7 +42,7 @@ export const CustomerLayout: React.FC = () => {
       <CartDrawer />
 
       {/* Auth Modal */}
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
 
       {/* Footer */}
       <Footer />

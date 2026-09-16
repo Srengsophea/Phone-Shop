@@ -181,6 +181,7 @@ class AdminProductController extends Controller
             'warranty_info' => 'nullable|string',
             'variants' => 'nullable|array',
             'specifications' => 'nullable|array',
+            'images' => 'nullable|array',
         ]);
 
         DB::transaction(function () use ($product, $validated, $request) {
@@ -188,12 +189,46 @@ class AdminProductController extends Controller
             $product->update($validated);
 
             if (isset($validated['variants'])) {
+                // If existing variant IDs are passed, update or create
                 foreach ($validated['variants'] as $v) {
-                    if (isset($v['id'])) {
-                        ProductVariant::where('id', $v['id'])->update($v);
+                    if (isset($v['id']) && $v['id']) {
+                        ProductVariant::where('id', $v['id'])->where('product_id', $product->id)->update([
+                            'name' => $v['name'],
+                            'sku' => $v['sku'],
+                            'price' => $v['price'],
+                            'sale_price' => $v['sale_price'] ?? null,
+                            'stock' => $v['stock'],
+                            'color' => $v['color'] ?? null,
+                            'color_hex' => $v['color_hex'] ?? null,
+                            'storage' => $v['storage'] ?? null,
+                            'ram' => $v['ram'] ?? null,
+                        ]);
                     } else {
                         $product->variants()->create($v);
                     }
+                }
+            }
+
+            if (isset($validated['images'])) {
+                $product->images()->delete();
+                foreach ($validated['images'] as $i => $img) {
+                    $product->images()->create([
+                        'image_path' => $img['image_path'],
+                        'is_primary' => $img['is_primary'] ?? ($i === 0),
+                        'display_order' => $i,
+                    ]);
+                }
+            }
+
+            if (isset($validated['specifications'])) {
+                $product->specifications()->delete();
+                foreach ($validated['specifications'] as $i => $spec) {
+                    $product->specifications()->create([
+                        'group_name' => $spec['group_name'],
+                        'name' => $spec['name'],
+                        'value' => $spec['value'],
+                        'display_order' => $i,
+                    ]);
                 }
             }
 
@@ -213,6 +248,31 @@ class AdminProductController extends Controller
             'success' => true,
             'message' => 'Product updated successfully.',
             'data' => $product->fresh(['brand', 'category', 'variants', 'images', 'specifications']),
+        ]);
+    }
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp,svg|max:5120',
+        ]);
+
+        $file = $request->file('image');
+        $fileName = 'prod_' . time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+        $targetDir = public_path('images/products');
+
+        if (!file_exists($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+
+        $file->move($targetDir, $fileName);
+        $imageUrl = '/images/products/' . $fileName;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Image uploaded successfully.',
+            'url' => $imageUrl,
+            'image_path' => $imageUrl,
         ]);
     }
 
