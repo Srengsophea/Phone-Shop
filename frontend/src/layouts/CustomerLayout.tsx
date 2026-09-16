@@ -4,6 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { CartDrawer } from '../components/CartDrawer';
 import { AuthModal } from '../components/AuthModal';
+import { CompareFloatingDock } from '../components/CompareFloatingDock';
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { useWishlistStore } from '../stores/wishlistStore';
@@ -43,6 +44,9 @@ export const CustomerLayout: React.FC = () => {
 
       {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
+
+      {/* Compare Floating Dock */}
+      <CompareFloatingDock />
 
       {/* Footer */}
       <Footer />

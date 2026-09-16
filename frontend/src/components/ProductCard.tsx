@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, Eye } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Eye, ArrowLeftRight } from 'lucide-react';
 import { Product } from '../types';
 import { formatPrice, getImageUrl } from '../utils/formatters';
 import { useCartStore } from '../stores/cartStore';
 import { useWishlistStore } from '../stores/wishlistStore';
 import { useAuthStore } from '../stores/authStore';
+import { useCompareStore } from '../stores/compareStore';
 
 interface ProductCardProps {
   product: Product;
@@ -16,8 +17,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
   const { addItem, isLoading: isCartLoading } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const { isAuthenticated, openAuthModal } = useAuthStore();
+  const { addToCompare, removeFromCompare, isInCompare } = useCompareStore();
 
   const isFavorite = isInWishlist(product.id);
+  const inCompare = isInCompare(product.id);
   const primaryImage = product.images?.find((img) => img.is_primary)?.image_path || product.images?.[0]?.image_path;
 
   // Variant options preview
@@ -92,6 +95,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
             title={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
           >
             <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (inCompare) {
+                removeFromCompare(product.id);
+              } else {
+                addToCompare(product);
+              }
+            }}
+            className={`p-2 rounded-xl transition-all shadow-md ${
+              inCompare
+                ? 'bg-blue-600 text-white shadow-blue-500/30'
+                : 'bg-slate-900/80 backdrop-blur-md text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+            title={inCompare ? 'Remove from compare' : 'Compare with other phones'}
+          >
+            <ArrowLeftRight className="w-4 h-4" />
           </button>
 
           {onQuickView && (

@@ -11,6 +11,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { WishlistPage } from './pages/WishlistPage';
+import { ComparePage } from './pages/ComparePage';
 
 // Admin Portal Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
@@ -58,10 +59,13 @@ export default function App() {
           <Route path="checkout" element={<CheckoutPage />} />
           <Route path="orders/track/:orderNumber" element={<OrderTrackingPage />} />
           <Route path="orders/track" element={<OrderTrackingPage />} />
+          <Route path="track-order" element={<OrderTrackingPage />} />
+          <Route path="track-order/:orderNumber" element={<OrderTrackingPage />} />
           <Route path="profile" element={<UserProfilePage />} />
           <Route path="orders" element={<UserProfilePage />} />
           <Route path="addresses" element={<UserProfilePage />} />
           <Route path="wishlist" element={<WishlistPage />} />
+          <Route path="compare" element={<ComparePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
 

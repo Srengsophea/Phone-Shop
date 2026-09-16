@@ -12,12 +12,15 @@ import {
   ShieldCheck,
   Package,
   MapPin,
-  ChevronDown
+  ChevronDown,
+  ArrowLeftRight
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { useWishlistStore } from '../stores/wishlistStore';
 import { useFilterStore } from '../stores/filterStore';
+import { useCompareStore } from '../stores/compareStore';
+import { SearchModal } from './SearchModal';
 
 interface NavbarProps {
   onOpenAuth: () => void;
@@ -29,10 +32,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
   const { cart, toggleCart } = useCartStore();
   const { items: wishlistItems } = useWishlistStore();
   const { search, setSearch } = useFilterStore();
+  const compareCount = useCompareStore((state) => state.items.length);
 
   const [searchInput, setSearchInput] = useState(search);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
+  // Global Ctrl+K / Cmd+K listener
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchModalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const cartCount = cart.items.reduce((acc, item) => acc + item.quantity, 0);
   const wishlistCount = wishlistItems.length;
@@ -66,29 +83,38 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-300">
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-300">
             <Link to="/" className="hover:text-blue-400 transition-colors">Home</Link>
             <Link to="/products" className="hover:text-blue-400 transition-colors">Phones</Link>
+            <Link to="/compare" className="hover:text-blue-400 transition-colors flex items-center gap-1.5">
+              <span>Compare</span>
+              {compareCount > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-blue-600 text-white">
+                  {compareCount}
+                </span>
+              )}
+            </Link>
             <Link to="/brands" className="hover:text-blue-400 transition-colors">Brands</Link>
             <Link to="/deals" className="hover:text-blue-400 transition-colors flex items-center gap-1.5">
               <span>Deals</span>
               <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">HOT</span>
             </Link>
-            <Link to="/accessories" className="hover:text-blue-400 transition-colors">Accessories</Link>
+            <Link to="/track-order" className="hover:text-blue-400 transition-colors">Track Order</Link>
           </nav>
 
-          {/* Search Bar */}
+          {/* Predictive Search Bar Trigger */}
           <div className="hidden md:flex flex-1 max-w-md mx-2">
-            <form onSubmit={handleSearchSubmit} className="w-full relative">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search iPhone, Galaxy, Pixel, 5G..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-full bg-slate-900/90 border border-slate-800 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-            </form>
+            <button
+              type="button"
+              onClick={() => setIsSearchModalOpen(true)}
+              className="w-full flex items-center justify-between pl-10 pr-3 py-2.5 rounded-full bg-slate-900/90 border border-slate-800 text-sm text-slate-400 hover:border-slate-700 hover:text-slate-300 transition-all shadow-inner relative group"
+            >
+              <Search className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors absolute left-3.5 top-3" />
+              <span className="truncate">Search phones by brand, chip, camera...</span>
+              <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-[10px] font-mono text-slate-400 group-hover:text-slate-200">
+                Ctrl K
+              </kbd>
+            </button>
           </div>
 
           {/* Actions: Wishlist, Cart, User Account */}
@@ -220,23 +246,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
         {/* Mobile Search & Menu Drawer */}
         {isMobileMenuOpen && (
           <div className="lg:hidden py-4 border-t border-slate-800/80 space-y-4">
-            <form onSubmit={handleSearchSubmit} className="relative">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search phones..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-200"
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-            </form>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsSearchModalOpen(true);
+              }}
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-400 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-blue-400" />
+                <span>Search phones...</span>
+              </div>
+              <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">Search</span>
+            </button>
 
             <nav className="flex flex-col space-y-2 text-sm font-medium text-slate-300">
               <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-lg hover:bg-slate-800">Home</Link>
               <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-lg hover:bg-slate-800">Phones</Link>
+              <Link to="/compare" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-lg hover:bg-slate-800 flex items-center justify-between">
+                <span>Compare</span>
+                {compareCount > 0 && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-blue-600 text-white font-bold">{compareCount}</span>
+                )}
+              </Link>
               <Link to="/brands" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-lg hover:bg-slate-800">Brands</Link>
               <Link to="/deals" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-lg hover:bg-slate-800 text-rose-400">Hot Deals</Link>
-              <Link to="/accessories" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-lg hover:bg-slate-800">Accessories</Link>
+              <Link to="/track-order" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-lg hover:bg-slate-800">Track Order</Link>
               {isAdmin && (
                 <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-lg bg-blue-600/20 text-blue-400 font-semibold">
                   Admin Dashboard
@@ -247,6 +283,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
         )}
 
       </div>
+
+      {/* Global Predictive Search Modal */}
+      <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
     </header>
   );
 };

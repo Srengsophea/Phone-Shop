@@ -12,7 +12,12 @@ import {
   AlertCircle,
   MessageSquare,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  ArrowLeftRight,
+  Shield,
+  Zap,
+  BadgeCheck,
+  Smartphone
 } from 'lucide-react';
 import api from '../api/axios';
 import { Product, ProductVariant, Review } from '../types';
@@ -20,6 +25,7 @@ import { formatPrice, formatDate, getImageUrl } from '../utils/formatters';
 import { useCartStore } from '../stores/cartStore';
 import { useWishlistStore } from '../stores/wishlistStore';
 import { useAuthStore } from '../stores/authStore';
+import { useCompareStore } from '../stores/compareStore';
 import { BrandLogo } from '../components/BrandLogo';
 
 export const ProductDetailPage: React.FC = () => {
@@ -36,6 +42,10 @@ export const ProductDetailPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'specs' | 'reviews'>('specs');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Trade-In & Care+ Studio State
+  const [selectedTradeIn, setSelectedTradeIn] = useState<string>('none');
+  const [selectedCarePlan, setSelectedCarePlan] = useState<'standard' | 'care_plus'>('standard');
 
   // Review Modal state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -91,13 +101,38 @@ export const ProductDetailPage: React.FC = () => {
     );
   }
 
+  const TRADE_IN_DEVICES = [
+    { id: 'none', name: 'No Trade-In', credit: 0, sub: 'Keep current device' },
+    { id: 'ip15pm', name: 'Apple iPhone 15 Pro Max', credit: 600, sub: 'Save $600' },
+    { id: 'ip14pm', name: 'Apple iPhone 14 Pro Max', credit: 450, sub: 'Save $450' },
+    { id: 's24u', name: 'Samsung Galaxy S24 Ultra', credit: 550, sub: 'Save $550' },
+    { id: 's23u', name: 'Samsung Galaxy S23 Ultra', credit: 400, sub: 'Save $400' },
+    { id: 'p8p', name: 'Google Pixel 8 Pro', credit: 320, sub: 'Save $320' },
+  ];
+
+  const compareStore = useCompareStore();
   const isFavorite = isInWishlist(product.id);
+  const isCompareActive = compareStore.isInCompare(product.id);
   const activeVariant = selectedVariant || product.variants?.[0];
   const price = activeVariant?.sale_price ?? activeVariant?.price ?? product.sale_price ?? product.base_price;
   const originalPrice = (activeVariant?.sale_price ? activeVariant.price : null) || product.base_price;
   const hasDiscount = originalPrice && price < originalPrice;
   const discountPercent = hasDiscount ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
   const stockAvailable = activeVariant?.stock ?? 10;
+
+  const selectedTradeInObj = TRADE_IN_DEVICES.find((d) => d.id === selectedTradeIn);
+  const tradeInCredit = selectedTradeInObj?.credit || 0;
+  const carePlanCost = selectedCarePlan === 'care_plus' ? 99 : 0;
+  const effectivePrice = Math.max(0, price + carePlanCost - tradeInCredit);
+  const monthlyInstallment = (effectivePrice / 24).toFixed(2);
+
+  const handleToggleCompare = () => {
+    if (isCompareActive) {
+      compareStore.removeFromCompare(product.id);
+    } else {
+      compareStore.addToCompare(product);
+    }
+  };
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
@@ -224,13 +259,27 @@ export const ProductDetailPage: React.FC = () => {
                   {product.brand?.name} Flagship
                 </span>
               </div>
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
-                title="Share product"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleToggleCompare}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    isCompareActive
+                      ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-sm shadow-blue-500/20'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                  title={isCompareActive ? 'Remove from Compare' : 'Add to Compare'}
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                  <span>{isCompareActive ? 'In Compare' : 'Compare'}</span>
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+                  title="Share product"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -250,29 +299,58 @@ export const ProductDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Pricing Box */}
-          <div className="p-5 rounded-2xl bg-slate-900/40 border border-slate-800/80 flex items-baseline justify-between">
-            <div>
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-extrabold text-white">
-                  {formatPrice(price)}
+          {/* Dynamic Pricing Studio Box */}
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950 border border-slate-800/90 shadow-xl space-y-3">
+            <div className="flex items-baseline justify-between">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  {tradeInCredit > 0 || carePlanCost > 0 ? 'Estimated Total with Options' : 'Device Price'}
+                </div>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                    {formatPrice(effectivePrice)}
+                  </span>
+                  {(hasDiscount || tradeInCredit > 0) && (
+                    <span className="text-base text-slate-500 line-through">
+                      {formatPrice(originalPrice + carePlanCost)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="inline-block px-3 py-1 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold">
+                  or ${monthlyInstallment}/mo.
                 </span>
+                <p className="text-[10px] text-slate-400 mt-1">24 mo. with 0% APR</p>
+              </div>
+            </div>
+
+            {/* Price Modifiers Chips */}
+            {(tradeInCredit > 0 || carePlanCost > 0 || hasDiscount) && (
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-800/80">
+                {tradeInCredit > 0 && (
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> -{formatPrice(tradeInCredit)} Trade-In Credit
+                  </span>
+                )}
+                {carePlanCost > 0 && (
+                  <span className="px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-semibold flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> +{formatPrice(carePlanCost)} Care+ Plan
+                  </span>
+                )}
                 {hasDiscount && (
-                  <span className="text-base text-slate-500 line-through">
-                    {formatPrice(originalPrice)}
+                  <span className="px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+                    Save {formatPrice(originalPrice - price)} instant discount
                   </span>
                 )}
               </div>
-              <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1 font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5" /> In Stock & Ready for Immediate Delivery ({stockAvailable} units)
-              </p>
-            </div>
-
-            {hasDiscount && (
-              <span className="px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-                Save {formatPrice(originalPrice - price)}
-              </span>
             )}
+
+            <p className="text-xs text-emerald-400 flex items-center gap-1.5 font-medium pt-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              In Stock & Ready for Immediate Express Dispatch ({stockAvailable} units available)
+            </p>
           </div>
 
           {/* Variants Selector */}
@@ -281,7 +359,7 @@ export const ProductDetailPage: React.FC = () => {
               {/* Storage options */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                  Select Storage & Edition
+                  1. Select Storage & Edition
                 </label>
                 <div className="grid grid-cols-3 gap-3">
                   {product.variants.map((v) => (
@@ -290,7 +368,7 @@ export const ProductDetailPage: React.FC = () => {
                       onClick={() => setSelectedVariant(v)}
                       className={`p-3 rounded-2xl border text-left transition-all ${
                         activeVariant?.id === v.id
-                          ? 'bg-blue-600/15 border-blue-500 shadow-md shadow-blue-500/10'
+                          ? 'bg-blue-600/15 border-blue-500 shadow-md shadow-blue-500/10 ring-1 ring-blue-500'
                           : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
                       }`}
                     >
@@ -305,7 +383,7 @@ export const ProductDetailPage: React.FC = () => {
               {activeVariant?.color && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                    Color: <span className="text-white font-medium">{activeVariant.color}</span>
+                    2. Select Finish: <span className="text-white font-medium">{activeVariant.color}</span>
                   </label>
                   <div className="flex gap-2.5">
                     {product.variants.map((v) => (
@@ -313,7 +391,7 @@ export const ProductDetailPage: React.FC = () => {
                         key={v.id}
                         onClick={() => setSelectedVariant(v)}
                         className={`w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center p-0.5 ${
-                          activeVariant?.id === v.id ? 'border-blue-500 scale-110' : 'border-slate-800'
+                          activeVariant?.id === v.id ? 'border-blue-500 scale-110 shadow-lg shadow-blue-500/20' : 'border-slate-800 hover:border-slate-700'
                         }`}
                         title={v.color || v.name}
                       >
@@ -328,6 +406,98 @@ export const ProductDetailPage: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* Interactive Trade-In Studio Section */}
+          <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  3. PhoneHub Trade-In Credit
+                </label>
+              </div>
+              <span className="text-[11px] text-emerald-400 font-semibold">Save up to $600</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Trade in your eligible smartphone for instant credit applied directly to your purchase total.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+              {TRADE_IN_DEVICES.map((device) => {
+                const isSelected = selectedTradeIn === device.id;
+                return (
+                  <button
+                    key={device.id}
+                    type="button"
+                    onClick={() => setSelectedTradeIn(device.id)}
+                    className={`p-2.5 rounded-xl border text-left transition-all text-xs ${
+                      isSelected
+                        ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-sm shadow-emerald-500/10 ring-1 ring-emerald-500/50'
+                        : 'bg-slate-900/60 border-slate-800/90 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="font-semibold text-slate-200 truncate">{device.name}</div>
+                    <div className={`text-[11px] font-bold mt-0.5 ${isSelected ? 'text-emerald-400' : 'text-slate-400'}`}>
+                      {device.sub}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* PhoneHub Care+ Device Protection Plan */}
+          <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-blue-400" />
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  4. PhoneHub Care+ Device Protection
+                </label>
+              </div>
+              <span className="text-[11px] text-blue-400 font-semibold">Certified Coverage</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {/* Standard */}
+              <button
+                type="button"
+                onClick={() => setSelectedCarePlan('standard')}
+                className={`p-3 rounded-xl border text-left transition-all ${
+                  selectedCarePlan === 'standard'
+                    ? 'bg-blue-600/15 border-blue-500 text-white ring-1 ring-blue-500/50'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-slate-200">1-Year Standard</span>
+                  <span className="text-[11px] font-bold text-slate-400">Included Free</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Official manufacturer defect warranty with certified local replacement parts.
+                </p>
+              </button>
+
+              {/* Care+ */}
+              <button
+                type="button"
+                onClick={() => setSelectedCarePlan('care_plus')}
+                className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden ${
+                  selectedCarePlan === 'care_plus'
+                    ? 'bg-blue-600/15 border-blue-500 text-white shadow-md shadow-blue-500/10 ring-1 ring-blue-500'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-blue-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-blue-400" /> Care+ 2-Year
+                  </span>
+                  <span className="text-[11px] font-bold text-white">+$99.00</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Unlimited drop & screen repairs, liquid protection, and 24/7 priority replacement swap.
+                </p>
+              </button>
+            </div>
+          </div>
 
           {/* Quantity & CTA Buttons */}
           <div className="space-y-3 pt-4 border-t border-slate-800">

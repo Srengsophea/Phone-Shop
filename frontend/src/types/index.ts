@@ -157,7 +157,7 @@ export type OrderStatus =
 
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
-export type PaymentMethod = 'cod' | 'bank_transfer' | 'stripe';
+export type PaymentMethod = 'cod' | 'bank_transfer' | 'stripe' | 'bakong_khqr' | string;
 
 export interface OrderItem {
   id: number;
@@ -200,6 +200,7 @@ export interface Order {
   admin_notes?: string;
   items: OrderItem[];
   status_histories?: OrderStatusHistory[];
+  statusHistories?: OrderStatusHistory[];
   created_at: string;
 }
 

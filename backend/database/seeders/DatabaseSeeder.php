@@ -9,6 +9,8 @@ use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\InventoryTransaction;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductSpecification;
@@ -708,5 +710,59 @@ class DatabaseSeeder extends Seeder
         Setting::set('store_phone', '+855 23 888 999');
         Setting::set('currency', 'USD');
         Setting::set('free_shipping_threshold', 500);
+
+        // 8. Seed Demo Order for Live Tracking
+        $demoPhone = Product::where('slug', 'iphone-16-pro-max')->first() ?? Product::first();
+        if ($demoPhone) {
+            $demoOrder = Order::updateOrCreate(
+                ['order_number' => 'PH-2026-8891'],
+                [
+                    'user_id' => $customer->id,
+                    'status' => 'out_for_delivery',
+                    'payment_status' => 'paid',
+                    'payment_method' => 'bakong_khqr',
+                    'shipping_method' => 'express',
+                    'subtotal' => 1149.00,
+                    'discount_amount' => 50.00,
+                    'shipping_fee' => 0.00,
+                    'tax_amount' => 0.00,
+                    'total_amount' => 1099.00,
+                    'coupon_code' => 'PHONEHUB50',
+                    'shipping_address_snapshot' => [
+                        'full_name' => 'Sophea Pich',
+                        'phone' => '+855 12 345 678',
+                        'address_line_1' => '#45, Street 240, Apartment 3B',
+                        'commune' => 'Chaktomuk',
+                        'district' => 'Doun Penh',
+                        'province' => 'Phnom Penh',
+                        'country' => 'Cambodia',
+                        'delivery_notes' => 'Call 5 minutes before arrival. Leave at building reception if unavailable.'
+                    ],
+                    'customer_notes' => 'Please include extra screen protector and official warranty card.'
+                ]
+            );
+
+            $demoOrder->items()->delete();
+            $demoOrder->items()->create([
+                'product_id' => $demoPhone->id,
+                'variant_id' => $demoPhone->variants()->first()?->id,
+                'product_name' => $demoPhone->name,
+                'variant_name' => '256GB / Natural Titanium',
+                'sku' => 'IP16PM-256-NAT',
+                'unit_price' => 1149.00,
+                'quantity' => 1,
+                'subtotal' => 1149.00,
+            ]);
+
+            $demoOrder->statusHistories()->delete();
+            $demoOrder->statusHistories()->createMany([
+                ['status' => 'pending', 'notes' => 'Order received and verified via Bakong KHQR', 'created_at' => now()->subHours(4)],
+                ['status' => 'confirmed', 'notes' => 'Payment verified. Device allocated for fulfillment.', 'created_at' => now()->subHours(3)],
+                ['status' => 'processing', 'notes' => 'Device IMEI registered: 356789123456789. Genuine seal verified.', 'created_at' => now()->subHours(2)],
+                ['status' => 'packed', 'notes' => 'Packaged in shockproof security box with official warranty booklet.', 'created_at' => now()->subHours(1)],
+                ['status' => 'shipped', 'notes' => 'Dispatched from Phnom Penh Central Distribution Hub.', 'created_at' => now()->subMinutes(45)],
+                ['status' => 'out_for_delivery', 'notes' => 'Courier Rider Sokha V. (+855 12 999 111) is on the way.', 'created_at' => now()->subMinutes(15)],
+            ]);
+        }
     }
 }
