@@ -83,6 +83,10 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Honor', 'slug' => 'honor', 'logo' => 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=200&fit=crop', 'is_featured' => false],
             ['name' => 'Sony', 'slug' => 'sony', 'logo' => 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=200&fit=crop', 'is_featured' => false],
             ['name' => 'ASUS', 'slug' => 'asus', 'logo' => 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=200&fit=crop', 'is_featured' => false],
+            ['name' => 'Nothing', 'slug' => 'nothing', 'logo' => 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=200&fit=crop', 'is_featured' => true],
+            ['name' => 'Infinix', 'slug' => 'infinix', 'logo' => 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=200&fit=crop', 'is_featured' => false],
+            ['name' => 'Tecno', 'slug' => 'tecno', 'logo' => 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=200&fit=crop', 'is_featured' => false],
+            ['name' => 'Motorola', 'slug' => 'motorola', 'logo' => 'https://images.unsplash.com/photo-1567581935884-3349723552ca?w=200&fit=crop', 'is_featured' => false],
         ];
 
         $brands = [];
@@ -935,6 +939,8 @@ class DatabaseSeeder extends Seeder
                 ]
             ],
         ];
+
+        $phonesList = array_merge($phonesList, MorePhonesData::getPhones());
 
         foreach ($phonesList as $pData) {
             $brand = $brands[$pData['brand']];

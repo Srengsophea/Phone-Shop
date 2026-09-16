@@ -72,6 +72,10 @@ const POPULAR_BRANDS = [
   { name: 'OPPO', slug: 'oppo' },
   { name: 'Vivo', slug: 'vivo' },
   { name: 'Realme', slug: 'realme' },
+  { name: 'Honor', slug: 'honor' },
+  { name: 'Sony', slug: 'sony' },
+  { name: 'ASUS', slug: 'asus' },
+  { name: 'Nothing', slug: 'nothing' },
 ];
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {

@@ -199,6 +199,61 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     );
   }
 
+  // 12. Honor: Sleek typography on premium slate
+  if (normalized.includes('honor')) {
+    return (
+      <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-950 to-blue-950 border border-cyan-800/40 text-cyan-300 shadow-md p-1 ${className}`}>
+        <span className="font-sans text-[10px] font-black tracking-widest uppercase">
+          HONOR
+        </span>
+      </div>
+    );
+  }
+
+  // 13. ASUS / ROG: Gamer crimson & dark badge
+  if (normalized.includes('asus') || normalized.includes('rog')) {
+    return (
+      <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-br from-red-950 to-black border border-red-800/50 text-red-500 shadow-md p-1 ${className}`}>
+        <span className="font-mono text-[10px] font-black tracking-wider">
+          ROG
+        </span>
+      </div>
+    );
+  }
+
+  // 14. Infinix: Modern tech emerald badge
+  if (normalized.includes('infinix')) {
+    return (
+      <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-br from-emerald-950 to-slate-950 border border-emerald-700/40 text-emerald-400 shadow-md p-1 ${className}`}>
+        <span className="font-sans text-[9px] font-black tracking-wider">
+          INFINIX
+        </span>
+      </div>
+    );
+  }
+
+  // 15. Tecno: Royal blue badge
+  if (normalized.includes('tecno')) {
+    return (
+      <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-900 to-indigo-950 border border-blue-700/40 text-blue-300 shadow-md p-1 ${className}`}>
+        <span className="font-sans text-[9px] font-black tracking-wider">
+          TECNO
+        </span>
+      </div>
+    );
+  }
+
+  // 16. Motorola: Distinct Batwing 'M' styling
+  if (normalized.includes('motorola')) {
+    return (
+      <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-sky-700 text-white shadow-md p-1 ${className}`}>
+        <span className="font-sans text-xs font-black tracking-tight">
+          (M)
+        </span>
+      </div>
+    );
+  }
+
   // Default fallback: Branded gradient monogram badge
   const initial = name.charAt(0).toUpperCase() || 'P';
   return (

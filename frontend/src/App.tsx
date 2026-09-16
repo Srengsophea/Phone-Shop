@@ -12,6 +12,7 @@ import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { WishlistPage } from './pages/WishlistPage';
 import { ComparePage } from './pages/ComparePage';
+import { BrandsPage } from './pages/BrandsPage';
 
 // Admin Portal Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="products" element={<ProductListingPage />} />
           <Route path="products/:slug" element={<ProductDetailPage />} />
           <Route path="categories/:slug" element={<ProductListingPage />} />
+          <Route path="brands" element={<BrandsPage />} />
           <Route path="brands/:slug" element={<ProductListingPage />} />
           <Route path="deals" element={<ProductListingPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
