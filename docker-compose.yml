@@ -1,0 +1,135 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: phonehub_app
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    volumes:
+      - ./backend:/var/www/backend
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-phonehub}
+      - DB_USERNAME=${DB_USERNAME:-phonehub}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
+      - CACHE_STORE=redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - phonehub_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: phonehub_nginx
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8000}:80"
+    volumes:
+      - ./backend:/var/www/backend
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+      - frontend
+    networks:
+      - phonehub_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: phonehub_frontend
+    restart: unless-stopped
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:${WEB_PORT:-8000}/api/v1
+    networks:
+      - phonehub_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: phonehub_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-phonehub}
+      MYSQL_USER: ${DB_USERNAME:-phonehub}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_secret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - phonehub_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: phonehub_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - phonehub_network
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: phonehub_queue
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    command: php artisan queue:work redis --sleep=3 --tries=3
+    volumes:
+      - ./backend:/var/www/backend
+    depends_on:
+      - app
+      - redis
+      - mysql
+    networks:
+      - phonehub_network
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: phonehub_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    command: php artisan schedule:work
+    volumes:
+      - ./backend:/var/www/backend
+    depends_on:
+      - app
+      - redis
+      - mysql
+    networks:
+      - phonehub_network
+
+networks:
+  phonehub_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:

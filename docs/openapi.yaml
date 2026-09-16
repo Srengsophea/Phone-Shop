@@ -1,0 +1,430 @@
+openapi: 3.0.3
+info:
+  title: PhoneHub E-Commerce REST API
+  description: |
+    Production-Ready RESTful API for the PhoneHub Phone Shop E-Commerce Platform.
+    Provides customer storefront operations, persistent shopping cart, multi-step checkout,
+    multi-provider payment abstraction (COD, KHQR Bank Transfer, Stripe), and comprehensive admin portal with RBAC.
+  version: 1.0.0
+  contact:
+    name: PhoneHub Engineering
+    email: api-support@phonehub.com
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local Development API Server (Direct Laravel)
+  - url: http://localhost/api/v1
+    description: Docker Reverse Proxy Nginx Gateway
+
+paths:
+  # ----------------------------------------------------
+  # Authentication Endpoints
+  # ----------------------------------------------------
+  /auth/register:
+    post:
+      summary: Register a new customer account
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, password_confirmation]
+              properties:
+                name:
+                  type: string
+                  example: Jane Doe
+                email:
+                  type: string
+                  format: email
+                  example: jane@example.com
+                phone:
+                  type: string
+                  example: "+855 12 345 678"
+                password:
+                  type: string
+                  format: password
+                  example: SecretPass123!
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: SecretPass123!
+      responses:
+        '201':
+          description: Registration successful
+        '422':
+          description: Validation error
+
+  /auth/login:
+    post:
+      summary: Authenticate customer or admin user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@example.com
+                password:
+                  type: string
+                  format: password
+                  example: ChangeMe123!
+      responses:
+        '200':
+          description: Login successful with Sanctum token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    example: 1|sanctum_bearer_token_string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      summary: Revoke active Sanctum token
+      security:
+        - bearerAuth: []
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Successfully logged out
+
+  /auth/user:
+    get:
+      summary: Get currently authenticated user details
+      security:
+        - bearerAuth: []
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Authenticated user object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # ----------------------------------------------------
+  # Catalog Endpoints
+  # ----------------------------------------------------
+  /products:
+    get:
+      summary: Search, filter, and paginate smartphone catalog
+      tags:
+        - Catalog
+      parameters:
+        - name: search
+          in: query
+          description: Search term for name, SKU, or specs
+          schema:
+            type: string
+        - name: brand
+          in: query
+          description: Brand slug (e.g., apple, samsung)
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Category slug (e.g., smartphones, accessories)
+          schema:
+            type: string
+        - name: min_price
+          in: query
+          schema:
+            type: number
+        - name: max_price
+          in: query
+          schema:
+            type: number
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [featured, newest, price_asc, price_desc, rating, discount]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Paginated smartphone listing
+
+  /products/{slug}:
+    get:
+      summary: Retrieve single smartphone by slug with variants, specs, and gallery
+      tags:
+        - Catalog
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            example: samsung-galaxy-s25-ultra
+      responses:
+        '200':
+          description: Product details
+
+  /categories:
+    get:
+      summary: List all categories with hierarchy
+      tags:
+        - Catalog
+      responses:
+        '200':
+          description: Array of categories
+
+  /brands:
+    get:
+      summary: List all smartphone brands
+      tags:
+        - Catalog
+      responses:
+        '200':
+          description: Array of smartphone brands
+
+  # ----------------------------------------------------
+  # Shopping Cart Endpoints
+  # ----------------------------------------------------
+  /cart:
+    get:
+      summary: Retrieve current cart (guest or authenticated)
+      tags:
+        - Cart
+      parameters:
+        - name: X-Session-Token
+          in: header
+          description: Guest session UUID token
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart object with computed totals and items
+
+  /cart/items:
+    post:
+      summary: Add product or variant to cart
+      tags:
+        - Cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product_id, quantity]
+              properties:
+                product_id:
+                  type: integer
+                variant_id:
+                  type: integer
+                  nullable: true
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Updated cart
+
+  /cart/items/{id}:
+    put:
+      summary: Update cart item quantity
+      tags:
+        - Cart
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quantity]
+              properties:
+                quantity:
+                  type: integer
+      responses:
+        '200':
+          description: Updated cart
+
+  /cart/coupon:
+    post:
+      summary: Apply promo coupon code
+      tags:
+        - Cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  example: PHONEHUB50
+      responses:
+        '200':
+          description: Coupon applied successfully
+
+  # ----------------------------------------------------
+  # Checkout & Orders
+  # ----------------------------------------------------
+  /checkout:
+    post:
+      summary: Create validated order with payment gateway integration
+      security:
+        - bearerAuth: []
+      tags:
+        - Checkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [address_id, shipping_method, payment_method]
+              properties:
+                address_id:
+                  type: integer
+                shipping_method:
+                  type: string
+                  enum: [standard, express, pickup]
+                payment_method:
+                  type: string
+                  enum: [cod, bank_transfer, stripe]
+                customer_notes:
+                  type: string
+      responses:
+        '201':
+          description: Order created successfully with payment instructions
+
+  /orders/track/{orderNumber}:
+    get:
+      summary: Public lookup for order tracking by order number
+      tags:
+        - Orders
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            example: ORD-20260916-123456
+      responses:
+        '200':
+          description: Order tracking timeline and status history
+
+  # ----------------------------------------------------
+  # Admin Portal APIs (Protected with RBAC)
+  # ----------------------------------------------------
+  /admin/dashboard/stats:
+    get:
+      summary: Administrative KPI metrics, 7-day sales chart, and inventory health
+      security:
+        - bearerAuth: []
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Dashboard metrics
+
+  /admin/products:
+    get:
+      summary: Manage products list for admin
+      security:
+        - bearerAuth: []
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: List of products
+    post:
+      summary: Create new smartphone product with specifications & variants
+      security:
+        - bearerAuth: []
+      tags:
+        - Admin
+      responses:
+        '201':
+          description: Product created
+
+  /admin/inventory/adjust:
+    post:
+      summary: Perform manual stock adjustment with pessimistic locking & ledger audit
+      security:
+        - bearerAuth: []
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product_id, quantity_change, type, notes]
+              properties:
+                product_id:
+                  type: integer
+                variant_id:
+                  type: integer
+                  nullable: true
+                quantity_change:
+                  type: integer
+                type:
+                  type: string
+                  enum: [purchase, return, adjustment, damage]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Stock adjusted successfully
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, admin, manager, staff, customer]
+        avatar:
+          type: string
